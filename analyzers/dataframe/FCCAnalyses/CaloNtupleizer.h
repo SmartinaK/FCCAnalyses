@@ -77,6 +77,8 @@ ROOT::VecOps::RVec<TVector3> getCaloCluster_positionVector3 (const ROOT::VecOps:
 ROOT::VecOps::RVec<int> getCaloCluster_firstCell (const ROOT::VecOps::RVec<edm4hep::ClusterData>& in);
 ROOT::VecOps::RVec<int> getCaloCluster_lastCell (const ROOT::VecOps::RVec<edm4hep::ClusterData>& in);
 ROOT::VecOps::RVec<std::vector<float>> getCaloCluster_energyInLayers (const ROOT::VecOps::RVec<edm4hep::ClusterData>& in, const ROOT::VecOps::RVec<edm4hep::CalorimeterHitData>& cells, const int nLayers=12);
+ROOT::VecOps::RVec<std::vector<float>> getCaloCluster_leadingEnergyMaxima(const ROOT::VecOps::RVec<edm4hep::ClusterData>& in, const int leadMax);
+ ROOT::VecOps::RVec<float> getCaloCluster_eRatio(const ROOT::VecOps::RVec<edm4hep::ClusterData>& in,const ROOT::VecOps::RVec<edm4hep::CalorimeterHitData>& cells);
 
 // SimParticleSecondary
 ROOT::VecOps::RVec<float> getSimParticleSecondaries_x (const ROOT::VecOps::RVec<edm4hep::MCParticleData>& in);

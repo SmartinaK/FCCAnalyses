@@ -364,6 +364,92 @@ getCaloCluster_energyInLayers (const ROOT::VecOps::RVec<edm4hep::ClusterData>& i
   return result;
 }
 
+ROOT::VecOps::RVec<std::vector<float>> getCaloCluster_leadingEnergyMaxima(const ROOT::VecOps::RVec<edm4hep::ClusterData>& in,
+									     const ROOT::VecOps::RVec<edm4hep::CalorimeterHitData>& cells,
+									     const int layerToPick,                            
+									     const int leadMax) {
+
+    static const int layer_idx = m_decoder->index("layer");
+    static const int cryo_idx = m_decoder->index("cryo");
+
+    ROOT::VecOps::RVec<std::vector<float> > result{};
+
+    
+    
+    //std::cout<<"Have "<<in.size()<< " clusters"<<std::endl;
+    for (const auto & c: in) {
+        
+        
+      struct CellEnergy{
+	float energy{0.f};
+	unsigned id{0};
+      };
+        
+      std::vector<CellEnergy> cellEnergies{};
+      for (auto i = c.hits_begin; i < c.hits_end; i++) {
+
+	//std::cout<<"Cell i= "<<i<<" and cells.size() is "<<cells.size()<<std::endl;
+	int layer = m_decoder->get(cells[i].cellID, layer_idx);
+	int cryoID = m_decoder->get(cells[i].cellID, cryo_idx);
+	if(cryoID == 0 && layerToPick == layer ) {
+	  cellEnergies.emplace_back(cells[i].energy, cells[i].cellID);
+	}
+      }
+      
+      
+      std::sort(cellEnergies.begin(), cellEnergies.end(), [](const CellEnergy&a, const CellEnergy& b){
+          return a.energy > b.energy;
+        });
+        
+ 
+      std::vector<float> theEnergies{};
+        
+
+      //std::cout<<"Saving "<<leadMax<<" leading cells from the "<< cellEnergies.size()<< " sorted cells"<<std::endl;
+      for( auto i=0;i<leadMax && i<cellEnergies.size(); i++){
+	//std::cout<<"Pushing back index "<<i<<" with energy "<<cellEnergies.at(i).energy<<std::endl;
+	theEnergies.push_back(cellEnergies.at(i).energy);
+      }
+        
+      
+      result.push_back(theEnergies);
+      //std::cout<<"Stored energies, result size is now: "<<result.size()<<std::endl;  
+        
+    }
+    
+    
+    //std::cout<<"Returning results: " <<result.size()<<std::endl;
+    return result;
+}
+
+ROOT::VecOps::RVec<float> getCaloCluster_eRatio(const ROOT::VecOps::RVec<edm4hep::ClusterData>& in, const ROOT::VecOps::RVec<edm4hep::CalorimeterHitData>& cells) {
+    
+    ROOT::VecOps::RVec<float> result{};
+
+    auto clusterEnergyMaxima = getCaloCluster_leadingEnergyMaxima(in, cells, 1, 2);
+    if (clusterEnergyMaxima.empty()) return result;
+    
+    std::cout<<"Cluster Maxima size is "<<clusterEnergyMaxima.size()<<" in cluster size is "<<in.size()<<std::endl;
+    //NEED TO ADD PROTECTION FOR CASE WHERE THERE ARE NO ENERGIES OR ONLY ONE ENERGY
+    for( auto i=0;i<clusterEnergyMaxima.size(); i++){
+      //std::cout<<"Looking at index "<<i<<" I have "<<clusterEnergyMaxima[i].size()<<" leading energies"<<std::endl;
+
+      std::vector<float> & theMaxima = clusterEnergyMaxima[i];
+
+      if(theMaxima.size()>1){
+
+	result.emplace_back((theMaxima.at(0) - theMaxima.at(1)) / (theMaxima.at(0)+theMaxima.at(1)));
+      } else {
+	  //weird territory. Is Eratio 1 if only one or no enery deposits in first layer?
+
+	  result.emplace_back(1.0);//Maybe can eventually define Eratio=0 for no energy deposits
+	}
+
+    }
+    
+    return result;
+}
+
 ROOT::VecOps::RVec<float> getSimParticleSecondaries_x (const ROOT::VecOps::RVec<edm4hep::MCParticleData>& in){
   ROOT::VecOps::RVec<float> result;
   for (auto & p: in){
